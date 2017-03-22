@@ -22,13 +22,16 @@ def run(args):
     resources = {}
     for host in hosts_list:
     	resources[host] = getResourceForHost(host)
-	max_proc = calcMaxProcs(resources[host],args.mem)
-	print("Max Procs =",max_proc)
+	max_proc = calcMaxProcs(resources[host],args)
+	print("Max # of jobs on this node =",max_proc)
 
-def calcMaxProcs(resources,required_mem):
-	if required_mem is None:
-		return resources.cpu
-	return min(resources.cpu, resources.memory // required_mem)
+	
+
+
+def calcMaxProcs(resources,args):
+	if args.mem is None:
+		return resources.cpu // args.cpu
+	return min(resources.memory // args.mem, resources.cpu // args.cpu)
 
 def getResourceForHost(hostName):
 	resourceCommand = "cat /proc/meminfo /proc/cpuinfo"
@@ -50,14 +53,16 @@ if '__main__' == __name__:
     import argparse
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--hostfile', default=os.getenv('PBS_NODEFILE'))
-    parser.add_argument('--cpu', default=1, type=int)
-    parser.add_argument('--mem', type=int)
-    parser.add_argument('jobsfile')
+    parser.add_argument('--cpu', default=1, type=int, help='cpus required for the task/cmd')
+    parser.add_argument('--mem', type=int, help='memory required for each task/cmd')
+    parser.add_argument('jobsfile', help='tab separated file "directory command"')
 
     args = parser.parse_args()
     if not args.hostfile:
         parser.error('Use --hostfile or set $PBS_NODEFILE (you might be on the head node)')
-    
+    if args.cpu <=0:
+        parser.error('# of cores < 1')
+    	
 
 
     run(args)
