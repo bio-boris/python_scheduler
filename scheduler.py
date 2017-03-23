@@ -11,6 +11,8 @@ from collections import namedtuple
 import math
 
 Resources = namedtuple("Resources",'cpu memory')
+Job = namedtuple("Job",'cmd status')
+Node = namedtuple("Node",'slots_max slots_used')
 
 def run(args):
     with open(args.jobsfile) as f:
@@ -19,21 +21,36 @@ def run(args):
     with open(args.hostfile) as f:
 	hosts_list = f.read().splitlines()
 
+    resources = calc_resources(args,hosts_list)
+
+    while jobs_list:
+	schedule(resources,jobs_list.pop())
+
+def schedule(resources,job):
+	pass
+	
+#Checking available resources for each node
+#
+
+    	
+
+
+
+
+def calc_resources(args,hosts_list):	
     resources = {}
     for host in hosts_list:
-    	resources[host] = getResourceForHost(host)
-	max_proc = calcMaxProcs(resources[host],args)
-	print("Max # of jobs on this node =",max_proc)
+    	host_resources= get_resource_for_host(host)
+	max_proc = calc_max_procs(host_resources,args)
+	resources[host] = dict(resources=host_resources,max_jobs=max_proc)
+    return resources
 
-	
-
-
-def calcMaxProcs(resources,args):
+def calc_max_procs(resources,args):
 	if args.mem is None:
 		return resources.cpu // args.cpu
 	return min(resources.memory // args.mem, resources.cpu // args.cpu)
 
-def getResourceForHost(hostName):
+def get_resource_for_host(hostName):
 	resourceCommand = "cat /proc/meminfo /proc/cpuinfo"
 
 	cmd = "ssh {0} {1} ".format(hostName,resourceCommand)
