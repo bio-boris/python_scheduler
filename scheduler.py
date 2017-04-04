@@ -20,6 +20,8 @@ except ImportError:
 Resources = namedtuple("Resources",'cpu memory')
 Job = namedtuple("Job",'cmd status')
 Slots = namedtuple("Slots",'max used')
+log_dir = "logs/" 
+os.mkdir(log_dir)
 
 class Slots(object):
     def __init__(self,max,used):
@@ -39,14 +41,17 @@ def run(args):
     resources = calc_resources(args,hosts_list)
 
     running_jobs = []
+    total_jobs = len(jobs_list)
     while jobs_list:
         free_slots = get_available_slots(resources) #Read which slots are in use and which are free
         if free_slots:
             for host in free_slots:
                 if jobs_list:
                     resources[host]['slots'].used +=1; #Filling slot 
+                    job_name = total_jobs - len(jobs_list);
                     cmd = jobs_list.pop();
-                    proc = schedule(host,cmd)
+
+                    proc = schedule(host,cmd,job_name)
                     running_jobs.append( (host,proc) )
 
         for host,job in running_jobs:
@@ -67,19 +72,22 @@ def get_available_slots(resources):
             number_of_slots = node_info['slots'].max - node_info['slots'].used
             avail_hosts.extend([node_name] * number_of_slots)
 
-    print(avail_hosts)
-    exit()
     return avail_hosts
         
     
 
-def schedule(node_name,cmd):
+def schedule(node_name,cmd,job_name):
     #"ssh node_name ; job";
     #popen(job);
     print(node_name, cmd)
     clean_job = quote(cmd)
     ssh_job = "ssh {0} {1}".format(node_name,clean_job)
-    return subprocess.Popen(ssh_job, shell=True, stderr=subprocess.PIPE, stdout=subprocess.PIPE)
+
+    out = "{0}/{1}.out".format(log_dir,job_name)
+    err = "{0}/{1}.err".format(log_dir,job_name)
+    
+    with open(out, "w+") as out_fh, open(err, "w+")  as err_fh:
+        return subprocess.Popen(ssh_job, shell=True, stderr=err_fh, stdout=out_fh)
     
 
     
