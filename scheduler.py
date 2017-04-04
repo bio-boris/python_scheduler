@@ -9,6 +9,13 @@ import subprocess
 import re
 from collections import namedtuple
 import math
+try:
+    from pipes import quote
+except ImportError:
+    from shlex import quote
+    
+
+
 
 Resources = namedtuple("Resources",'cpu memory')
 Job = namedtuple("Job",'cmd status')
@@ -33,20 +40,23 @@ def run(args):
 
     running_jobs = []
     while jobs_list:
-        avail_slots = get_available_slots(resources)
-        if avail_slots:
-            for host in avail_slots:
+        free_slots = get_available_slots(resources) #Read which slots are in use and which are free
+        if free_slots:
+            for host in free_slots:
                 if jobs_list:
-                    resources[host]['slots'].used +=1;
-                    job = jobs_list.pop();
-                    running_jobs.append( (host,job) )
-                    schedule(host,job)
+                    resources[host]['slots'].used +=1; #Filling slot 
+                    cmd = jobs_list.pop();
+                    proc = schedule(host,cmd)
+                    running_jobs.append( (host,proc) )
+
         for host,job in running_jobs:
             if is_finished(job) :
                 resources[host]['slots'].used -= 1; #Free Up Slot
 
-def is_finished(j0b):
-    return True
+
+def is_finished(proc):
+    return  proc.poll() is not None
+
     
 
 
@@ -57,14 +67,20 @@ def get_available_slots(resources):
             number_of_slots = node_info['slots'].max - node_info['slots'].used
             avail_hosts.extend([node_name] * number_of_slots)
 
+    print(avail_hosts)
+    exit()
     return avail_hosts
         
     
 
-def schedule(node_name,job):
+def schedule(node_name,cmd):
     #"ssh node_name ; job";
     #popen(job);
-    print(node_name, job)
+    print(node_name, cmd)
+    clean_job = quote(cmd)
+    ssh_job = "ssh {0} {1}".format(node_name,clean_job)
+    return subprocess.Popen(ssh_job, shell=True, stderr=subprocess.PIPE, stdout=subprocess.PIPE)
+    
 
     
 #Checking available resources for each node
