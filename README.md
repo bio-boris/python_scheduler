@@ -15,10 +15,10 @@ Scheduler allows user to aggregate the independent single-core jobs under a sing
 # Jobs File
 Example File 
 ```
-cd /home/username/project1/; tool.pl -param1 True -data /home/username/datasets/data1 
-cd /home/username/project1/; tool.pl -param1 True -data /home/username/datasets/data2 
-cd /home/username/project1/; tool.pl -param1 True -data /home/username/datasets/data3 
-cd /home/username/project1/; tool.pl -param1 True -data /home/username/datasets/dataN  
+cd /home/username/project1/; ./tool.pl -param1 True -data /home/username/datasets/data1 
+cd /home/username/project1/; ./tool.pl -param1 True -data /home/username/datasets/data2 
+cd /home/username/project1/; ./tool.pl -param1 False -data /home/username/datasets/data3 
+cd /home/username/project1/; ./tool.pl -param1 True -data /home/username/datasets/dataN  
 ```
 
 # Parameters
