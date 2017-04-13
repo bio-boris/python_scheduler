@@ -9,6 +9,8 @@ import subprocess
 import re
 from collections import namedtuple
 import math
+import datetime
+import time
 try:
     from pipes import quote
 except ImportError:
@@ -20,8 +22,14 @@ except ImportError:
 Resources = namedtuple("Resources",'cpu memory')
 Job = namedtuple("Job",'cmd status')
 Slots = namedtuple("Slots",'max used')
-log_dir = "logs/" 
-os.mkdir(log_dir)
+LOG_DIR = None;
+
+def create_logs_dir(log_dir):
+    ts = time.time()
+    stamp = datetime.datetime.fromtimestamp(ts).strftime('%Y_%m_%d_%H_%M_%S')
+    log_dir = (log_dir + "_" + str(stamp)) 
+    os.mkdir(log_dir)
+    return log_dir 
 
 class Slots(object):
     def __init__(self,max,used):
@@ -83,8 +91,8 @@ def schedule(node_name,cmd,job_name):
     clean_job = quote(cmd)
     ssh_job = "ssh {0} {1}".format(node_name,clean_job)
 
-    out = "{0}/{1}.out".format(log_dir,job_name)
-    err = "{0}/{1}.err".format(log_dir,job_name)
+    out = "{0}/{1}.out".format(LOG_DIR,job_name)
+    err = "{0}/{1}.err".format(LOG_DIR,job_name)
     
     with open(out, "w+") as out_fh, open(err, "w+")  as err_fh:
         return subprocess.Popen(ssh_job, shell=True, stderr=err_fh, stdout=out_fh)
@@ -131,6 +139,7 @@ if '__main__' == __name__:
     parser.add_argument('--hostfile', default=os.getenv('PBS_NODEFILE'))
     parser.add_argument('--cpu', default=1, type=int, help='cpus required for the task/cmd')
     parser.add_argument('--mem', type=int, help='memory required for each task/cmd')
+    parser.add_argument('--log', default='log', help='log file directory for this job')
     parser.add_argument('jobsfile', help='tab separated file "directory command"')
 
     args = parser.parse_args()
@@ -139,6 +148,5 @@ if '__main__' == __name__:
     if args.cpu <=0:
         parser.error('# of cores < 1')
         
-
-
+    LOG_DIR = create_logs_dir(args.log)
     run(args)
